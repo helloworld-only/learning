@@ -148,9 +148,12 @@
 >  spring.application.name=mybatis-plus
 >  
 >  spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
->  spring.datasource.url=jdbc:mysql://localhost/mybatis_plus?characterEncoding=utf-8&useSSL=false
+>  spring.datasource.url=jdbc:mysql://localhost:3306/mybatis_plus?serverTimezone=GMT%2B8&characterEncoding=utf-8&useSSL=false
 >  spring.datasource.username=root
 >  spring.datasource.password=lwb
+>  
+>  # 配置数据源的类型
+>  spring.datasource.type=com.zaxxer.hikari.HikariDataSource
 >  
 >  # 关闭日志
 >  logging.level.root=off
@@ -948,9 +951,13 @@
    >
    >  **逻辑删除使用场景**：可以进行数据恢复
 
+* **扩展**
+
+   > 可以在数据表中添加一个类型为 **`tinyint`** 的字段来表示是否逻辑删除
 
 
-# 六. 条件构造器
+
+# 六. 条件构造器 @
 
 ## 1. wrapper简介
 
@@ -961,18 +968,194 @@
 >     -  AbstractWrapper ： 用于查询条件封装，生成 sql 的 where 条件
 >
 >        *  QueryWrapper ： 查询条件封装
->
->        *  UpdateWrapper ： Update 条件封装
->
+>  *  UpdateWrapper ： Update 条件封装
 >        *  AbstractLambdaWrapper ： 使用Lambda 语法
 >
 >           *  LambdaQueryWrapper ：用于Lambda语法使用的查询Wrapper
+>  *  LambdaUpdateWrapper ： Lambda 更新封装Wrapper
+
+## 2. wrapper常见方法 **
+
+> | 函数名        | 说明                            | 示例                                                         |
+> | ------------- | ------------------------------- | ------------------------------------------------------------ |
+> | eq()          | =                               | eq("name", "lwb")<br>name = 'lwb'                            |
+> | ne()          | !=                              | ne("name", "lwb")<br>name != 'lwb'                           |
+> | gt()          | >                               | gt("age", 18)<br>age > 18                                    |
+> | ge()          | >=                              | ge("age", 18)<br>age >= 18                                   |
+> | lt()          | <                               | lt("age", 18)<br>age < 18                                    |
+> | le()          | <=                              | le("age", 18)<br>age <= 18                                   |
+> | between()     | BETWEEN v1 AND v2               | between("age", 18, 25)<br>age between 18 and 25              |
+> | notBetween()  | NOT BETWEEN v1 AND v2           |                                                              |
+> | like()        | LIKE '%key%'                    | like("name", "w")<br>like '%w%'                              |
+> | notLike()     | NOT LIKE '%key%'                |                                                              |
+> | likeLeft()    | LIKE '%key'                     | likeLeft("name", "w")<br>like '%w'                           |
+> | likeRight()   | LIKE 'key%'                     | likeRight("name", "w")<br>like 'w%'                          |
+> | isNull()      | field IS NULL                   | isNull("name")<br>name is null                               |
+> | isNotNull()   | field IS NOT NULL               |                                                              |
+> | in()          | field IN (v1, v2, ...)          | in("age", 18, 19, 20)<br>age in (18,19,20)                   |
+> | notIn()       | field NOT IN (v1, v2, ...)      |                                                              |
+> | inSql()       | field IN (sql 语句)             | inSql("id", "select id from user")<br>id in (select id from user) |
+> | notInSql()    | field not IN (sql语句)          |                                                              |
+> | groupBy()     | GROUP BY field1,...             | groupBy("id")<br>group by id                                 |
+> | having()      | HAVING (sql 语句)               | having("sum(age) > {0}", 10)<br>having sum(age) > 10         |
+> | orderByAsc()  | ORDER BY field1... ASC          |                                                              |
+> | orderByDesc() | ORDER BY field1... DESC         |                                                              |
+> | orderBy()     | ORDER BY field1...              |                                                              |
+> | or()          | 拼接 OR                         | :one:or(i -> i.eq("name", "lwb").eq("age",18))<br>or (name='lwb' and age=18)<br>:two:or().eq("name", "lwb").eq("age", 19)<br>or name='lwb' and age=19 |
+> | and()         | 拼接 AND                        | 与or类似                                                     |
+> | apply()       | 拼接sql                         |                                                              |
+> | last()        | 无视优化规则直接拼接到sql的最后 | 只能调用一次，多次调用以最后一次调用为准<br>last("limit 10")，限制查询结果条数为10 |
+> | exists()      | exists(sql语句)                 |                                                              |
+> | notExists()   | not exists(sql 语句)            |                                                              |
+> | nested()      |                                 |                                                              |
 >
->           *  LambdaUpdateWrapper ： Lambda 更新封装Wrapper
+> 
 
 
 
-# 扩展
+## 3. QueryWrapper
+
+
+
+## 4. UpdateWrapper
+
+
+
+## 5.LambdaQueryWrapper **
+
+
+
+## 6.LambdaUpdateWrapper **
+
+
+
+# 七.分页
+
+## 1.配置mybatisplus自带的分页插件
+
+### 1.1编写配置类
+
+> ```java
+> @Configuration
+> public class MybatisPlusConfig {
+> 
+>     @Bean
+>     public MybatisPlusInterceptor mybatisPlusInterceptor(){
+>         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+>         
+>         PaginationInnerInterceptor paginationInnerInterceptor = 
+>             new PaginationInnerInterceptor(DbType.MYSQL);
+>         
+>         interceptor.addInnerInterceptor(paginationInnerInterceptor);
+>         return interceptor;
+>     }
+> }
+> ```
+
+### 1.2测试
+
+> ```java
+> @SpringBootTest
+> public class PageTest {
+> 
+>     @Autowired
+>     private IUserService userService;
+> 
+>     @Test
+>     public void pageTest(){
+>         LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery(User.class);
+>         wrapper.lt(User::getId, 10);
+>         
+>         IPage<User> iPage = new Page<>(1,3);
+>         IPage<User> page = userService.page(iPage, wrapper);
+>         List<User> records = page.getRecords(); // 获得查询结果集
+>         long total = page.getTotal(); // 获得数据库中记录总数
+>     }
+> }
+> ```
+>
+> ![image-20221121142904785](MybatisPlus.assets/image-20221121142904785.png)
+
+
+
+## 2.自定义mapper方法实现分页
+
+> 有时候BaseMapper提供的方法可能不能满足我们的需求，我们要自己编写mapper方法，且要用到分页功能
+
+### 2.1编写mapper方法
+
+> ```java
+> public interface UserMapper extends BaseMapper<User> {
+>     IPage<User> selectByPage(@Param("page") IPage iPage, @Param("id") Integer id);
+> }
+> ```
+
+### 2.2编写mapper映射问价
+
+> ```xml
+> <?xml version="1.0" encoding="UTF-8"?>
+> <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+> <mapper namespace="com.mybatisplus.mapper.UserMapper">
+> 
+>     <select id="selectByPage" resultType="com.mybatisplus.entity.User">
+>         select `id`,`name`,`age`,`email` from `user` where id &lt; #{id}
+>     </select>
+> </mapper>
+> <!-- 由于 < 会被解析为标签，所以我们要使用转义符 &lt; -->
+> ```
+
+### 2.3 springboot配置文件配置mapper文件的location
+
+> ```properties
+> mybatis-plus.mapper-locations=classpath*:mybatis/mapper/*.xml
+> 
+> # 注意：配置了MybatisPlusConfig配置类就不要写下面的，两者只能存在一个
+> # mybatis-plus.config-location=classpath:mybatis/mybatis-config.xml
+> ```
+
+
+
+### 2.4测试
+
+> ```java
+> @SpringBootTest
+> public class PageTest {
+> 
+>     @Autowired
+>     private UserMapper userMapper;
+> 
+>     @Test
+>     public void selfDefineMethodUsePage(){
+>         IPage<User> iPage = new Page<>(2,3);
+>         IPage<User> page = userMapper.selectByPage(iPage, 10);
+>         List<User> records = page.getRecords();
+>     }
+> }
+> ```
+
+
+
+# 八.乐观锁
+
+
+
+# 九.通用枚举
+
+
+
+# 十. 代码生成器
+
+
+
+# 十一. 多数据源
+
+
+
+# 十二. MybatisX插件
+
+
+
+# 十三. 扩展
 
 ## 1.雪花算法
 
@@ -1080,6 +1263,13 @@
 >  
 >  # 配置Mybatis-Plus的主键策略(全局有效)
 >  mybatis-plus.global-config.db-config.id-type=auto
+>  
+>  # 配置mapper文件所在位置
+>  mybatis-plus.mapper-locations=classpath*:mybatis/mapper/*.xml
+>  
+>  # mybatis-plus配置所在位置
+>  # 注意：配置了MybatisPlusConfig配置类就不要写下面的，两者只能存在一个
+>  # mybatis-plus.config-location=classpath:mybatis/mybatis-config.xml
 >  ```
 >
 >  
