@@ -1177,6 +1177,8 @@
 >
 > ![image-20221122170755815](Gradle.assets/image-20221122170755815.png)
 
+
+
 ### 2. 第一步：引入maven发布的插件
 
 > 在 build.gradle 添加如下代码：
@@ -1238,10 +1240,6 @@
 > **publish: 发布到 repositories 中指定的仓库(比如 Maven 私服)**
 >
 > **`publishToMavenLocal`**: 执行所有发布任务中的操作发布到本地 maven 仓库【默认在用户家目录下的.m2/repository】。
-
-
-
-## 
 
 
 
