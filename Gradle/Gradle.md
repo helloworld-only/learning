@@ -255,7 +255,7 @@
 >  | zipStoreBase     | 下载的Gradle压缩包存放位置                         |
 >  | zipStorePath     | 相对于zipStoreBase的Gradle压缩包的路径             |
 
->  **注意**：前面提到的 **`GRALE_USER_HOME`** 环境变量用于 `Gradle Wrapper` 下载的特定版本的 gradle 存储目录。如果我们没有配置过 **`GRALE_USER_HOME`** 环境变量，**默认在当前用户家目录下的.gradle 文件夹**中。
+>  **注意**：前面提到的 **`GRADLE_USER_HOME`** 环境变量用于 `Gradle Wrapper` 下载的特定版本的 gradle 存储目录。如果我们没有配置过 **`GRADLE_USER_HOME`** 环境变量，**默认在当前用户家目录下的.gradle 文件夹**中。
 
 
 
@@ -446,7 +446,7 @@
 
 
 
-## 1.项目的生命周期
+## :one:项目的生命周期
 
 > Gradle 项目的生命周期分为三大阶段: Initialization -> Configuration -> Execution. 每个阶段都有自己的职责具体如下图所示:
 >
@@ -492,7 +492,7 @@
 
 
 
-## 2. settings文件
+## :two: settings文件
 
 ### 2.1 概述
 
@@ -528,13 +528,13 @@
 
 
 
-## 3. Task
+## :three: Task
 
 ### 3.1任务概述
 
 
 
-## 4. Gradle中的文件操作
+## :four: Gradle中的文件操作
 
 ### 4.1几种常见的文件操作方式
 
@@ -953,7 +953,7 @@
 
 
 
-## 7. build.gradle文件
+## :seven: build.gradle文件
 
 ### 7.1概述
 
@@ -1144,7 +1144,7 @@
 
 
 
-## 8. gradle.properties
+## :eight: gradle.properties
 
 > gradle.properties 文件案例：加快构建速度的，gradle.properties 文件中的属性会自动在项目运行时加载。
 >
@@ -1240,6 +1240,211 @@
 > **publish: 发布到 repositories 中指定的仓库(比如 Maven 私服)**
 >
 > **`publishToMavenLocal`**: 执行所有发布任务中的操作发布到本地 maven 仓库【默认在用户家目录下的.m2/repository】。
+
+
+
+## :keycap_ten:生命周期中的Hook
+
+
+
+# 五.实战 *
+
+## :one:创建SpringBoot项目
+
+### 1. 引入Springboot插件
+
+> ```
+> plugins{
+> 	id 'org.springframework.boot' version '2.3.7.RELEASE' //维护springboot版本号,不单独使用,和下面两个插件一起用
+> 	id 'io.spring.dependency-management' version '1.0.10.RELEASE' //进行依赖管理,在引入其它boot依赖时省略版本号、解决jar包冲突问题
+> 	id 'java'
+> }
+> ```
+
+### 2.引入所需依赖
+
+> ```
+> allprojects{
+>     dependencies {
+>         implementation 'org.springframework.boot:spring-boot-starter' 
+>         implementation 'org.springframework.boot:spring-boot-starter-web' //省略版本,原生bom支持,插件management提供
+>         testImplementation('org.springframework.boot:spring-boot-starter-test') {
+>             exclude group: 'org.junit.vintage', module: 'junit-vintage-engine' 
+>         }
+>     }
+>     test {
+>         useJUnitPlatform()
+>     }
+> }
+> 
+> ```
+
+### 3.运行项目
+
+> 执行 **`gradle bootRun`** 指令（或者运行SpringBoot的主启动类(可以用命令行，也可以用idea)）
+>
+> 要想运行当前 Springboot 项目，直接执行 `gradle bootRun` 指令或者 idea 右侧按钮即可。
+> 当然如果想让当前项目打成可执行 jar 包，只需执行： `gradle bootJar` 指令即可。
+
+
+
+## :two:基于 ssm 多模块项目案例
+
+### 1.模块划分
+
+> ![image-20221123155538757](Gradle.assets/image-20221123155538757.png)
+>
+> meinian-mobile-web: 美年旅游项目的用户系统
+>
+> meinian-web: 美年旅游项目的管理员系统
+>
+> meinian-service: 美年旅游项目的业务逻辑层
+>
+> meinian-dao : 美年旅游项目的持久化层
+>
+> meinian-bean : 美年旅游项目的 Model 封装
+
+### 2.项目搭建前配置分析
+
+> ![image-20221123155646563](Gradle.assets/image-20221123155646563.png)
+
+
+
+### 3. 编写rootProject的settings.gradle
+
+> ```
+> rootProject.name = 'meinian-parent' 
+> include 'meinian-bean' 
+> include 'meinian-dao' 
+> include 'meinian-service' 
+> include 'meinian-web' 
+> include 'meinian-mobile-web'
+
+### 4.在rootProject的build.gradle中进行公共配置
+
+> ```
+> plugins {
+>     id 'java'
+>     id 'java-library'
+> }
+> allprojects{
+> 	group 'com.gradle'
+> 	version '1.0-SNAPSHOT'
+> 	
+> 	apply plugin: 'java' //应用插件
+> 	
+> 	//基本JDK配置
+> 	sourceCompatibility = 1.8
+> 	targetCompatibility = 1.8
+> 	compileJava.options.encoding "UTF-8" 
+> 	compileTestJava.options.encoding "UTF-8"
+> 	tasks.withType(JavaCompile) { options.encoding = "UTF-8" }
+> 	
+> 	repositories { 
+>         mavenLocal() 
+>         maven {url "https://maven.aliyun.com/repository/public"} 
+>         maven {url "https://maven.aliyun.com/repository/central"} 
+>         maven {url "https://maven.aliyun.com/repository/google"} 
+>         maven {url "https://maven.aliyun.com/repository/spring"} 
+>         mavenCentral()
+>     }
+>     
+>     //依赖的配置:设置通用的依赖
+>     dependencies {
+>     	testImplementation 'org.junit.jupiter:junit-jupiter-api' 
+>     	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine' 
+>     	implementation 'log4j:log4j:1.2.17' 
+>     }
+>     test {
+>     	useJUnitPlatform()
+>     }
+> }
+> ```
+
+
+
+### 5.bean模块添加依赖
+
+> bean模块的 build.gradle
+>
+> ```
+> dependencies {
+> 	compileOnly 'org.projectlombok:lombok:1.18.24' 
+> }
+> ```
+
+### 6. dao模块添加依赖
+
+> ```
+> apply plugin: 'java-library'//支持api
+> dependencies {
+> 	api project(':meinian-bean') // 这里模块间依赖就必须使用 api 了
+> 	implementation 'org.mybatis:mybatis-spring:1.2.3' 
+> 	implementation 'com.alibaba:druid:1.0.15' 
+> 	implementation 'org.mybatis:mybatis:3.3.0' 
+> 	implementation 'mysql:mysql-connector-java:5.1.36' 
+> }
+> ```
+
+### 7. service模块添加依赖
+
+> ```
+> apply plugin: 'java-library'//支持api
+> dependencies {
+> 	api project(':meinian-dao')
+> 	implementation 'org.springframework:spring-web:4.1.7.RELEASE' 
+> 	implementation 'org.springframework:spring-test:4.0.5.RELEASE' 
+> 	implementation 'org.springframework:spring-jdbc:4.1.7.RELEASE' 
+> 	implementation 'org.aspectj:aspectjweaver:1.8.6' 
+> }
+> ```
+
+### 8. web模块添加依赖
+
+> 该模块是处理后台管理系统的请求的
+>
+> ```
+> apply plugin: 'war' 
+> dependencies {
+> 	implementation project(':meinian-service')
+> 	implementation 'org.springframework:spring-webmvc:4.1.7.RELEASE' 
+> 	implementation "com.fasterxml.jackson.core:jackson-databind:2.2.3"
+> 	implementation "com.fasterxml.jackson.core:jackson-annotations:2.2.3"
+> 	implementation "com.fasterxml.jackson.core:jackson-core:2.2.3" 
+> 	compileOnly 'javax.servlet:servlet-api:2.5' 
+> 	implementation 'jstl:jstl:1.2' 
+> }
+> ```
+
+### 9. mobile-web模块添加依赖
+
+> 该模块是处理客户端的请求的
+>
+> ```
+> apply plugin: 'war' dependencies {
+> 	implementation project(':meinian-service')
+> 	implementation 'org.springframework:spring-webmvc:4.1.7.RELEASE' 
+> 	implementation "com.fasterxml.jackson.core:jackson-databind:2.2.3"
+> 	implementation "com.fasterxml.jackson.core:jackson-annotations:2.2.3"
+> 	implementation "com.fasterxml.jackson.core:jackson-core:2.2.3" 
+> 	compileOnly 'javax.servlet:servlet-api:2.5' 
+> 	implementation 'jstl:jstl:1.2' 
+> }
+> ```
+
+
+
+## :three:微服务实战
+
+> 详情见尚硅谷gradle教程
+
+
+
+
+
+
+
+
 
 
 
